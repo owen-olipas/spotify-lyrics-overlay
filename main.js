@@ -41,7 +41,7 @@ app.on("ready", async () => {
     resizable: false,
     hasShadow: false,
     webPreferences: {
-      preload: path.join(__dirname, "preload.js"),
+      preload: path.join(__dirname, "js", "preload.js"),
       contextIsolation: true,
       nodeIntegration: false,
     },
@@ -50,7 +50,7 @@ app.on("ready", async () => {
   win.loadFile("index.html");
 
   // Start Spotify auth flow
-  authorizeSpotify();
+  await authorizeSpotify();
 
   let lastTrackId = null;
 
