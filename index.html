@@ -6,14 +6,13 @@
     <link rel="stylesheet" href="./dist/tailwind.css" />
   </head>
   <body class="app-drag m-0 select-none">
-    <div
-      class="app-drag bg-black/30 text-white text-3xl font-medium px-5 py-4 rounded-2xl shadow-lg backdrop-blur-sm"
-    >
-      <div class="flex items-center gap-2">
+    <div class="app-drag bg-black/30 text-white text-sm font-medium py-4 rounded-2xl shadow-lg backdrop-blur-sm text-center">
+      <div class=" items-center gap-2 text-center">
         <span>🎵</span>
         <span id="track" class="truncate text-center">Waiting for song...</span>
       </div>
-      <div class="text-white/80 text-base" id="artist"></div>
+      <div class="text-white/80 italic" id="artist"></div>
+      <div id="lyrics" class="mt-2 text-base text-white/90"></div>
     </div>
 
     <script>
@@ -22,10 +21,27 @@
 
         if (window.electronAPI) {
             window.electronAPI.onTrackUpdate((data) => {
-                console.log("🎤 Renderer got update:", data); // debug
+                // console.log("🎤 Renderer got update:", data); // debug
                 document.getElementById("track").textContent = data.track;
                 document.getElementById("artist").textContent = data.artist || "";
             });
+
+
+            window.electronAPI.onLyricsUpdate((lyricsData) => {
+                const lyricsBox = document.getElementById("lyrics");
+                lyricsBox.innerHTML = ""; // clear old lyrics
+
+                if (lyricsData?.lyrics?.lines) {
+                lyricsData.lyrics.lines.forEach((line) => {
+                    const p = document.createElement("p");
+                    p.textContent = line.words;
+                    lyricsBox.appendChild(p);
+                });
+                } else {
+                lyricsBox.textContent = "No lyrics found 😢";
+                }
+            });
+
         } else {
             console.warn("⚠️ electronAPI not available. Check preload.js path.");
         }
