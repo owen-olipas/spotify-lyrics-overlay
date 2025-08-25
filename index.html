@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Karaoke Overlay</title>
+    <link rel="stylesheet" href="./dist/tailwind.css" />
+  </head>
+  <body class="app-drag m-0 select-none">
+    <div
+      class="app-drag bg-black/30 text-white text-3xl font-medium px-5 py-4 rounded-2xl shadow-lg backdrop-blur-sm"
+    >
+      <div class="flex items-center gap-2">
+        <span>🎵</span>
+        <span id="track" class="truncate text-center">Waiting for song...</span>
+      </div>
+      <div class="text-white/80 text-base" id="artist"></div>
+    </div>
+
+    <script>
+        // This will work now with CommonJS preload
+        console.log("electronAPI?", window.electronAPI);
+
+        if (window.electronAPI) {
+            window.electronAPI.onTrackUpdate((data) => {
+                console.log("🎤 Renderer got update:", data); // debug
+                document.getElementById("track").textContent = data.track;
+                document.getElementById("artist").textContent = data.artist || "";
+            });
+        } else {
+            console.warn("⚠️ electronAPI not available. Check preload.js path.");
+        }
+    </script>
+
+  </body>
+</html>

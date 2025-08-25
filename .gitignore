@@ -1,0 +1,23 @@
+# Node modules
+node_modules/
+
+# Electron cache / compiled files
+dist/
+out/
+build/
+*.asar
+
+# Tailwind build output
+dist/tailwind.css
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment variables / secrets
+.env
