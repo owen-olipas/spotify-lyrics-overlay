@@ -38,7 +38,7 @@ app.on("ready", async () => {
     frame: false,
     transparent: true,
     alwaysOnTop: true,
-    resizable: true,
+    resizable: false,
     hasShadow: false,
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
@@ -56,8 +56,9 @@ app.on("ready", async () => {
 
   setInterval(async () => {
     const data = await getCurrentlyPlaying();
+    win.webContents.send("track-update", data);
+    console.log(data.progress);
     if (data && data.id !== lastTrackId) {
-      win.webContents.send("track-update", data);
       lastTrackId = data.id;
       try {
         // TODO: Replace with value from user settings/secure store

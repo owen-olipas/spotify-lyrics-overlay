@@ -4,48 +4,98 @@
     <meta charset="utf-8" />
     <title>Karaoke Overlay</title>
     <link rel="stylesheet" href="./dist/tailwind.css" />
+    <style>
+      .glow {
+        text-shadow: 0 0 10px rgba(255, 255, 255, 0.9),
+                     0 0 20px rgba(0, 200, 255, 0.7),
+                     0 0 30px rgba(0, 200, 255, 0.5);
+      }
+      .lyrics-container {
+        height: 4rem; /* 2 lines only */
+        overflow: hidden;
+        position: relative;
+      }
+      .lyrics-line {
+        transition: transform 0.5s ease-in-out;
+      }
+    </style>
   </head>
   <body class="app-drag m-0 select-none">
     <div class="app-drag bg-black/30 text-white text-sm font-medium py-4 rounded-2xl shadow-lg backdrop-blur-sm text-center">
-      <div class=" items-center gap-2 text-center">
+      <div class="items-center gap-2 text-center">
         <span>🎵</span>
         <span id="track" class="truncate text-center">Waiting for song...</span>
       </div>
       <div class="text-white/80 italic" id="artist"></div>
-      <div id="lyrics" class="mt-2 text-base text-white/90"></div>
+
+      <!-- Lyrics block -->
+      <div id="lyrics" class="lyrics-container text-xl leading-relaxed"></div>
     </div>
 
     <script>
-        // This will work now with CommonJS preload
-        console.log("electronAPI?", window.electronAPI);
+      let currentIndex = 0;
+      let lyricsLines = [];
+      let startTime = Date.now();
 
-        if (window.electronAPI) {
-            window.electronAPI.onTrackUpdate((data) => {
-                // console.log("🎤 Renderer got update:", data); // debug
-                document.getElementById("track").textContent = data.track;
-                document.getElementById("artist").textContent = data.artist || "";
-            });
+      if (window.electronAPI) {
+        window.electronAPI.onTrackUpdate((data) => {
+          document.getElementById("track").textContent = data.track;
+          document.getElementById("artist").textContent = data.artist || "";
+          startTime = Date.now() - (data.progress || 0); // align with playback
+        });
 
+        window.electronAPI.onLyricsUpdate((lyricsData) => {
+          const lyricsBox = document.getElementById("lyrics");
+          lyricsBox.innerHTML = ""; // reset
 
-            window.electronAPI.onLyricsUpdate((lyricsData) => {
-                const lyricsBox = document.getElementById("lyrics");
-                lyricsBox.innerHTML = ""; // clear old lyrics
+          if (lyricsData?.lyrics?.lines) {
+            lyricsLines = lyricsData.lyrics.lines.map((l) => ({
+              time: parseInt(l.startTimeMs, 10),
+              words: l.words,
+            }));
+            currentIndex = 0;
+            renderLyrics();
+          } else {
+            lyricsBox.textContent = "No lyrics found 😢";
+          }
+        });
+      }
 
-                if (lyricsData?.lyrics?.lines) {
-                lyricsData.lyrics.lines.forEach((line) => {
-                    const p = document.createElement("p");
-                    p.textContent = line.words;
-                    lyricsBox.appendChild(p);
-                });
-                } else {
-                lyricsBox.textContent = "No lyrics found 😢";
-                }
-            });
+      function renderLyrics() {
+        const lyricsBox = document.getElementById("lyrics");
+        lyricsBox.innerHTML = "";
 
-        } else {
-            console.warn("⚠️ electronAPI not available. Check preload.js path.");
+        const currentLine = document.createElement("p");
+        currentLine.textContent = lyricsLines[currentIndex]?.words || "";
+        currentLine.className = "lyrics-line glow text-cyan-300 font-semibold";
+
+        const nextLine = document.createElement("p");
+        nextLine.textContent = lyricsLines[currentIndex + 1]?.words || "";
+        nextLine.className = "lyrics-line text-white/60 italic";
+
+        lyricsBox.appendChild(currentLine);
+        lyricsBox.appendChild(nextLine);
+      }
+
+      function syncLyrics() {
+        if (!lyricsLines.length) return;
+
+        const elapsed = Date.now() - startTime;
+
+        // find current line based on timestamp
+        let idx = lyricsLines.findIndex(
+          (line, i) =>
+            elapsed >= line.time &&
+            (i === lyricsLines.length - 1 || elapsed < lyricsLines[i + 1].time)
+        );
+
+        if (idx !== -1 && idx !== currentIndex) {
+          currentIndex = idx;
+          renderLyrics();
         }
-    </script>
+      }
 
+      setInterval(syncLyrics, 200); // check 5 times per sec
+    </script>
   </body>
 </html>
