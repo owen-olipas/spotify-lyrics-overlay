@@ -1,77 +1,107 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
+<head>
     <meta charset="utf-8" />
     <title>Karaoke Overlay</title>
     <link rel="stylesheet" href="./dist/tailwind.css" />
     <style>
-      .glow {
-        text-shadow: 0 0 10px rgba(255, 255, 255, 0.9),
-                     0 0 20px rgba(0, 200, 255, 0.7),
-                     0 0 30px rgba(0, 200, 255, 0.5);
-      }
-      .lyrics-container {
-        height: 4rem; /* 2 lines only */
-        overflow: hidden;
-        position: relative;
-      }
-      .lyrics-line {
-        transition: transform 0.5s ease-in-out;
-      }
+        .glow {
+            /* color: rgb(29, 185, 84); */
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.9),
+            0 0 20px rgba(29, 185, 84, 0.4),
+            0 0 30px rgba(0, 200, 255, 0.5);
+        }
+        .lyrics-container {
+            height: 4rem; /* 2 lines only */
+            overflow: hidden;
+            position: relative;
+        }
+        /* .lyrics-line {
+            transition: transform 0.5s ease-in-out;
+        } */
     </style>
-  </head>
-  <body class="app-drag m-0 select-none">
-    <div class="app-drag bg-black/30 text-white text-sm font-medium py-4 rounded-2xl shadow-lg backdrop-blur-sm text-center">
-      <div class="items-center gap-2 text-center">
-        <span>🎵</span>
-        <span id="track" class="truncate text-center">Waiting for song...</span>
-      </div>
-      <div class="text-white/80 italic" id="artist"></div>
+</head>
+<body class="app-drag select-none m-0">
+    <div class="app-drag  text-white font-medium text-center items-center justify-center py-2">
+        <div class="flex gap-1 items-center justify-center text-center truncate text-xs text-white/40">
+            <span id="control" class="text-white/80">▶</span>
+            <span id="track" class="text-white/60 text-center">Loading... </span>
+            <span id="dash"></span>
+            <span class="" id="artist"></span>
+        </div>
 
-      <!-- Lyrics block -->
-      <div id="lyrics" class="lyrics-container text-xl leading-relaxed"></div>
+        <!-- Lyrics block -->
+        <div id="lyrics" 
+            class="text-base text-white/90 flex flex-col">
+        </div>
     </div>
 
     <script>
       let currentIndex = 0;
       let lyricsLines = [];
       let startTime = Date.now();
+      let isPlaying = false;
 
       if (window.electronAPI) {
         window.electronAPI.onTrackUpdate((data) => {
-          document.getElementById("track").textContent = data.track;
-          document.getElementById("artist").textContent = data.artist || "";
-          startTime = Date.now() - (data.progress || 0); // align with playback
+            document.getElementById("track").textContent = data.track;
+            document.getElementById("artist").textContent = data.artist || "";
+            document.getElementById("dash").textContent = "-";
+
+            const control = document.getElementById("control");
+            if (isPlaying) {
+                control.textContent = "❚❚";
+                control.className = "text-[rgb(29,185,84)] ";
+            } else control.textContent = "▶";
+
+            startTime = Date.now() - (data.progress || 0); // align with playback
+            isPlaying = data.is_playing;
         });
 
         window.electronAPI.onLyricsUpdate((lyricsData) => {
-          const lyricsBox = document.getElementById("lyrics");
-          lyricsBox.innerHTML = ""; // reset
-
-          if (lyricsData?.lyrics?.lines) {
-            lyricsLines = lyricsData.lyrics.lines.map((l) => ({
-              time: parseInt(l.startTimeMs, 10),
-              words: l.words,
-            }));
+            const lyricsBox = document.getElementById("lyrics");
+            lyricsBox.innerHTML = ""; // reset
+            lyricsLines = [];
             currentIndex = 0;
-            renderLyrics();
-          } else {
-            lyricsBox.textContent = "No lyrics found 😢";
-          }
+            
+            if (lyricsData?.lyrics?.syncType === "UNSYNCED") {
+                lyricsBox.textContent = "Lyrics is not synced 😢";
+            } else if (lyricsData?.lyrics?.lines) {
+                // Map lyrics first
+                lyricsLines = lyricsData.lyrics.lines.map((l) => ({
+                time: parseInt(l.startTimeMs, 10),
+                words: l.words,
+                }));
+
+                // If first line starts AFTER 1000ms, prepend dummy
+                if (lyricsLines.length && lyricsLines[0].time > 1000) {
+                lyricsLines.unshift({ time: 0, words: "♪" });
+                }
+
+                // If last line is empty, replace with dummy
+                if (lyricsLines.length && !lyricsLines[lyricsLines.length - 1].words.trim()) {
+                lyricsLines[lyricsLines.length - 1].words = "♪";
+                }
+
+                currentIndex = 0;
+                renderLyrics();
+            } else {
+                lyricsBox.textContent = "No lyrics found 😢";
+            }
         });
-      }
+        }
 
       function renderLyrics() {
         const lyricsBox = document.getElementById("lyrics");
         lyricsBox.innerHTML = "";
 
-        const currentLine = document.createElement("p");
+        const currentLine = document.createElement("div");
         currentLine.textContent = lyricsLines[currentIndex]?.words || "";
-        currentLine.className = "lyrics-line glow text-cyan-300 font-semibold";
+        currentLine.className = "lyrics-line glow text-xl font-bold basis-full bg-black/50 rounded-2xl shadow-lg backdrop-blur-sm p-1";
 
-        const nextLine = document.createElement("p");
+        const nextLine = document.createElement("div");
         nextLine.textContent = lyricsLines[currentIndex + 1]?.words || "";
-        nextLine.className = "lyrics-line text-white/60 italic";
+        nextLine.className = "lyrics-line text-white/80 text-sm flex-grow bg-gray-500/20 rounded-2xl shadow-lg backdrop-blur-sm";
 
         lyricsBox.appendChild(currentLine);
         lyricsBox.appendChild(nextLine);
@@ -89,7 +119,7 @@
             (i === lyricsLines.length - 1 || elapsed < lyricsLines[i + 1].time)
         );
 
-        if (idx !== -1 && idx !== currentIndex) {
+        if (idx !== -1 && idx !== currentIndex && isPlaying) {
           currentIndex = idx;
           renderLyrics();
         }

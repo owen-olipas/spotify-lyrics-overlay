@@ -65,12 +65,14 @@ async function getCurrentlyPlaying() {
 
   if (res.status === 200) {
     const data = await res.json();
+    // console.log(data);
     return {
         id: data.item?.id,
         track: data.item?.name,
         artist: data.item?.artists?.map((a) => a.name).join(", "),
         progress: data.progress_ms,
         duration: data.item?.duration_ms,
+        is_playing: data.is_playing,
     };
   } else if (res.status === 401 && refreshToken) {
     // Token expired → try refresh
