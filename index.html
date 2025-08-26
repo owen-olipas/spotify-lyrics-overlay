@@ -6,28 +6,20 @@
     <link rel="stylesheet" href="./dist/tailwind.css" />
     <style>
         .glow {
-            /* color: rgb(29, 185, 84); */
             text-shadow: 0 0 10px rgba(255, 255, 255, 0.9),
             0 0 20px rgba(29, 185, 84, 0.4),
             0 0 30px rgba(0, 200, 255, 0.5);
         }
-        .lyrics-container {
-            height: 4rem; /* 2 lines only */
-            overflow: hidden;
-            position: relative;
-        }
-        /* .lyrics-line {
-            transition: transform 0.5s ease-in-out;
-        } */
     </style>
 </head>
 <body class="app-drag select-none m-0">
     <div class="app-drag  text-white font-medium text-center items-center justify-center py-2">
-        <div class="flex gap-1 items-center justify-center text-center truncate text-xs text-white/40">
-            <span id="control" class="text-white/80">▶</span>
-            <span id="track" class="text-white/60 text-center">Loading... </span>
-            <span id="dash"></span>
-            <span class="" id="artist"></span>
+        <div class="flex gap-1 items-center justify-center text-center truncate text-xs text-white/60">
+            <span id="control" class="text-white/90"></span>
+            <span id="track" class="text-white/90 text-center glow">Loading... </span>
+            <span id="dash" class="glow"></span>
+            <span id="artist" class="glow"></span>
+            <span id="trailing" class="text-[rgb(29,185,84)]"></span>
         </div>
 
         <!-- Lyrics block -->
@@ -49,10 +41,16 @@
             document.getElementById("dash").textContent = "-";
 
             const control = document.getElementById("control");
+            const trailing = document.getElementById("trailing");
+
             if (isPlaying) {
-                control.textContent = "❚❚";
-                control.className = "text-[rgb(29,185,84)] ";
-            } else control.textContent = "▶";
+                control.textContent = "♬⋆.˚";
+                control.className = "text-[rgb(29,185,84)]";
+                trailing.textContent = "✩♬₊˚."
+            } else{
+                control.textContent = "▶";
+                trailing.textContent = ""
+            }
 
             startTime = Date.now() - (data.progress || 0); // align with playback
             isPlaying = data.is_playing;
@@ -65,7 +63,11 @@
             currentIndex = 0;
             
             if (lyricsData?.lyrics?.syncType === "UNSYNCED") {
-                lyricsBox.textContent = "Lyrics is not synced 😢";
+                const nextLine = document.createElement("div");
+                nextLine.textContent = "Lyrics is not synced 😢";
+                nextLine.className = "text-white/80 text-sm flex-grow bg-gray-500/20 rounded-2xl shadow-lg backdrop-blur-sm p-2 mt-1";
+
+                lyricsBox.appendChild(nextLine);
             } else if (lyricsData?.lyrics?.lines) {
                 // Map lyrics first
                 lyricsLines = lyricsData.lyrics.lines.map((l) => ({
@@ -97,11 +99,11 @@
 
         const currentLine = document.createElement("div");
         currentLine.textContent = lyricsLines[currentIndex]?.words || "";
-        currentLine.className = "lyrics-line glow text-xl font-bold basis-full bg-black/50 rounded-2xl shadow-lg backdrop-blur-sm p-1";
+        currentLine.className = "glow text-xl font-bold basis-full bg-black/50 rounded-2xl shadow-lg backdrop-blur-sm p-1";
 
         const nextLine = document.createElement("div");
         nextLine.textContent = lyricsLines[currentIndex + 1]?.words || "";
-        nextLine.className = "lyrics-line text-white/80 text-sm flex-grow bg-gray-500/20 rounded-2xl shadow-lg backdrop-blur-sm";
+        nextLine.className = "text-white/80 text-sm flex-grow bg-gray-500/20 rounded-2xl shadow-lg backdrop-blur-sm pb-1";
 
         lyricsBox.appendChild(currentLine);
         lyricsBox.appendChild(nextLine);
